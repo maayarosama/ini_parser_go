@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-const file_path = "./testdata/sample.ini"
-const wrong_file_path = "./testdata/wrong_sample.ini"
+const inisample = "./testdata/sample.ini"
+const malformedinisample = "./testdata/wrong_sample.ini"
 
 func TestReadFromString(t *testing.T) {
 	t.Run("ReadFromString_with_comments", func(t *testing.T) {
@@ -55,7 +55,7 @@ func TestReadFromString(t *testing.T) {
 
 func TestReadFromFile(t *testing.T) {
 	parser := NewParser()
-	parser.ReadFromFile(file_path)
+	parser.ReadFromFile(inisample)
 	got := parser.data["Profile"]["password"]
 	want := "secret"
 
@@ -116,7 +116,7 @@ func TestGetSection(t *testing.T) {
 
 	t.Run("getsection_fromfile", func(t *testing.T) {
 		parser := NewParser()
-		parser.ReadFromFile(file_path)
+		parser.ReadFromFile(inisample)
 		got, _ := parser.GetSection("Profile")
 		want := map[string]string{
 			"name":     "jarvis",
@@ -157,7 +157,7 @@ func TestGetSections(t *testing.T) {
 
 	t.Run("getsections_fromfile", func(t *testing.T) {
 		parser := NewParser()
-		parser.ReadFromFile(file_path)
+		parser.ReadFromFile(inisample)
 		got := parser.GetSections()
 		want := []string{"Profile", "Deployment", "Owner"}
 		if !reflect.DeepEqual(want, got) {
@@ -194,7 +194,7 @@ func TestGetSectionKeys(t *testing.T) {
 
 	t.Run("getsection_fromfile", func(t *testing.T) {
 		parser := NewParser()
-		parser.ReadFromFile(file_path)
+		parser.ReadFromFile(inisample)
 		got := parser.GetSectionKeys("Owner")
 		want := []string{"name", "email"}
 		if !reflect.DeepEqual(want, got) {
@@ -239,7 +239,7 @@ func TestWriteToFile(t *testing.T) {
 
 	t.Run("writetofile_fromfile", func(t *testing.T) {
 		parser := NewParser()
-		parser.ReadFromFile(file_path)
+		parser.ReadFromFile(inisample)
 		got := parser.WriteToFile("./testdata/writetofile_sample.ini")
 		// want := true
 		_, isFile := os.Stat("./testdata/writetofile_sample.ini")
@@ -285,7 +285,7 @@ func TestWrongValues(t *testing.T) {
 
 	t.Run("test_wrong_content_from_file", func(t *testing.T) {
 		parser := NewParser()
-		err := parser.ReadFromFile(wrong_file_path)
+		err := parser.ReadFromFile(malformedinisample)
 
 		if err == nil {
 			t.Errorf("It should've returned an error: %v", err)
@@ -329,7 +329,7 @@ func TestWrongSection(t *testing.T) {
 
 	t.Run("test_wrong_section_from_file", func(t *testing.T) {
 		parser := NewParser()
-		err := parser.ReadFromFile(file_path)
+		err := parser.ReadFromFile(inisample)
 
 		if err != nil {
 			t.Errorf("Error: %v", err)
@@ -378,7 +378,7 @@ func TestWrongGet(t *testing.T) {
 
 	t.Run("test_wrong_key_from_file", func(t *testing.T) {
 		parser := NewParser()
-		err := parser.ReadFromFile(file_path)
+		err := parser.ReadFromFile(inisample)
 
 		if err != nil {
 			t.Errorf("Error: %v", err)
@@ -423,7 +423,7 @@ func TestInvalidWriteToFile(t *testing.T) {
 
 	t.Run("writetofile_fromfile", func(t *testing.T) {
 		parser := NewParser()
-		parser.ReadFromFile(file_path)
+		parser.ReadFromFile(inisample)
 		got := parser.WriteToFile("./")
 
 		if got == nil {

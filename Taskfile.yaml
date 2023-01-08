@@ -1,0 +1,17 @@
+version: '3'
+
+tasks:
+  tests:
+    cmds:
+      - go test ./... -v
+    silent: true
+  
+  coverage:
+    cmds:
+      - go test ./parser  -race -covermode=atomic -coverprofile=coverage.out
+    silent: true
+  
+  vet:
+    cmds:
+      - go vet ./parser
+    silent: true

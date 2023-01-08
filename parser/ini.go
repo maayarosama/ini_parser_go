@@ -49,6 +49,7 @@ func (parser *Parser) readFromReader(r io.Reader) error {
 		}
 
 	}
+
 	return nil
 }
 func (parser *Parser) ReadFromString(content string) error {
