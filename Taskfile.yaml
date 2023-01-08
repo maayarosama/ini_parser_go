@@ -13,5 +13,5 @@ tasks:
   
   vet:
     cmds:
-      - go vet ./parser
+      - go vet ./...
     silent: true

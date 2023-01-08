@@ -26,12 +26,17 @@ func (parser *Parser) readFromReader(r io.Reader) error {
 
 	for sc.Scan() {
 
-		line := strings.Trim(sc.Text(), " \n\t")
-		TrimmedLine := strings.TrimSpace(line)
+		line := strings.TrimSpace(sc.Text())
+		trimmedline := strings.TrimSpace(line)
+
+		if len(trimmedline) == 0 || strings.HasPrefix(trimmedline, "#") {
+			continue
+		}
 		if len(line) > 2 && line[0] == '[' && line[len(line)-1] == ']' {
 
 			section = strings.TrimSpace(line[1 : len(line)-1])
 			parser.data[section] = make(map[string]string)
+			continue
 
 		} else if strings.Contains(line, "=") {
 
@@ -40,10 +45,6 @@ func (parser *Parser) readFromReader(r io.Reader) error {
 			val := strings.TrimSpace(keyVal[1])
 			parser.data[section][key] = val
 
-		} else if len(TrimmedLine) == 0 {
-			continue
-		} else if strings.Contains(TrimmedLine, "#") {
-			continue
 		} else {
 			return fmt.Errorf("No sections found")
 		}
@@ -63,17 +64,15 @@ func (parser *Parser) ReadFromFile(path string) error {
 	if err != nil {
 		return fmt.Errorf("Could not open file '%v': %v", path, err)
 	}
+	defer fh.Close()
+
 	return parser.readFromReader(fh)
 
 }
 
 func (parser *Parser) Get(section, key string) (string, error) {
-	if parser.data[section][key] == "" {
-		return "", fmt.Errorf("Key not found")
-	} else {
-		return parser.data[section][key], nil
+	return parser.data[section][key], nil
 
-	}
 }
 
 func (parser *Parser) GetSection(section string) (map[string]string, error) {
@@ -119,11 +118,10 @@ func (parser *Parser) WriteToFile(path string) error {
 	if err != nil {
 		return fmt.Errorf("Could not create file '%v': %v", path, err)
 	}
-	_, err = fh.Write([]byte(content))
-	if err != nil {
-		return err
-	}
+	defer fh.Close()
 
-	return nil
+	_, err = fh.Write([]byte(content))
+
+	return err
 
 }
