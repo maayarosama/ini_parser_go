@@ -32,21 +32,28 @@ func (parser *Parser) readFromReader(r io.Reader) error {
 		if len(trimmedline) == 0 || strings.HasPrefix(trimmedline, "#") {
 			continue
 		}
-		if len(line) > 2 && line[0] == '[' && line[len(line)-1] == ']' {
+		if len(line) > 2 && line[0] == '[' {
+			if line[len(line)-1] == ']' {
+				section = strings.TrimSpace(line[1 : len(line)-1])
+				parser.data[section] = make(map[string]string)
 
-			section = strings.TrimSpace(line[1 : len(line)-1])
-			parser.data[section] = make(map[string]string)
-			continue
+			} else {
+				return fmt.Errorf("section not found")
+			}
 
-		} else if strings.Contains(line, "=") {
+		}
+		if strings.Contains(line, "=") {
 
 			keyVal := strings.Split(line, "=")
 			key := strings.TrimSpace(keyVal[0])
 			val := strings.TrimSpace(keyVal[1])
-			parser.data[section][key] = val
+			if key == "" || val == "" {
+				return fmt.Errorf("Either Key or Value is missing")
+			}
 
-		} else {
-			return fmt.Errorf("No sections found")
+			parser.data[section][key] = val
+			continue
+
 		}
 
 	}
@@ -75,13 +82,10 @@ func (parser *Parser) Get(section, key string) (string, error) {
 
 }
 
-func (parser *Parser) GetSection(section string) (map[string]string, error) {
-	if parser.data[section] == nil {
-		return nil, fmt.Errorf("section not found")
-	} else {
-		return parser.data[section], nil
+func (parser *Parser) GetSection(section string) map[string]string {
 
-	}
+	return parser.data[section]
+
 }
 func (parser *Parser) GetSections() []string {
 	var sections []string
@@ -111,12 +115,12 @@ func (parser *Parser) String() string {
 	return content
 }
 
-func (parser *Parser) WriteToFile(path string) error {
+func (parser *Parser) WriteToFile() error {
 	content := parser.String()
-
-	fh, err := os.Create(path)
+	fh, err := os.CreateTemp("", "tmpfile-")
+	// fh, err := os.Create(path)
 	if err != nil {
-		return fmt.Errorf("Could not create file '%v': %v", path, err)
+		return fmt.Errorf("Could not create file : %v", err)
 	}
 	defer fh.Close()
 

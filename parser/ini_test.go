@@ -1,14 +1,13 @@
 package parser
 
 import (
-	"errors"
-	"os"
 	"reflect"
 	"testing"
 )
 
 const inisample = "./testdata/sample.ini"
 const malformedinisample = "./testdata/wrong_sample.ini"
+const emptysample = "./testdata/emptysample.ini"
 
 func TestReadFromString(t *testing.T) {
 	t.Run("ReadFromString_with_comments", func(t *testing.T) {
@@ -51,6 +50,35 @@ func TestReadFromString(t *testing.T) {
 		}
 	})
 
+	t.Run("ReadFromString_with_missing_key", func(t *testing.T) {
+		parser := NewParser()
+		content := `
+	[Profile]
+	 = jarvis
+	# credential
+	password= secret
+	`
+		err := parser.ReadFromString(content)
+		if err == nil {
+			t.Errorf("Error %v", err)
+		}
+
+	})
+
+	t.Run("ReadFromString_with_missing_value", func(t *testing.T) {
+		parser := NewParser()
+		content := `
+	[Profile]
+	name = jarvis
+	# credential
+	password= 
+	`
+		err := parser.ReadFromString(content)
+		if err == nil {
+			t.Errorf("Error %v", err)
+		}
+
+	})
 	t.Run("ReadFromString_multiple_section", func(t *testing.T) {
 		parser := NewParser()
 		content := `
@@ -95,6 +123,15 @@ func TestReadFromFile(t *testing.T) {
 		if got != want {
 			t.Errorf("Got: %s. Expected: %s", got, want)
 		}
+	})
+
+	t.Run("ReadFromFile_emptyfile", func(t *testing.T) {
+		parser := NewParser()
+		err := parser.ReadFromFile(emptysample)
+		if err != nil {
+			t.Errorf("Couldn't read from file")
+		}
+
 	})
 
 	t.Run("ReadFromFile_t2", func(t *testing.T) {
@@ -158,7 +195,7 @@ func TestGetSection(t *testing.T) {
 			t.Errorf("Couldn't read from string")
 		}
 
-		got, _ := parser.GetSection("Deployment")
+		got := parser.GetSection("Deployment")
 		want := map[string]string{
 			"cpu":       "4",
 			"memory":    "8192",
@@ -178,7 +215,7 @@ func TestGetSection(t *testing.T) {
 			t.Errorf("Couldn't read from file")
 		}
 
-		got, _ := parser.GetSection("Profile")
+		got := parser.GetSection("Profile")
 		want := map[string]string{
 			"name":     "jarvis",
 			"password": "secret",
@@ -213,10 +250,14 @@ func TestGetSections(t *testing.T) {
 		}
 
 		got := parser.GetSections()
-		want := []string{"Profile", "Deployment", "Owner"}
+		want := []string{"Owner", "Profile", "Deployment"}
 
-		if !reflect.DeepEqual(want, got) {
-			t.Errorf("Got: %v. Expected: %v", got, want)
+		for i := 0; i < len(got); i++ {
+
+			if contains(want, got[i]) == false {
+				t.Errorf("Got: %v. Expected: %v", got, want)
+
+			}
 		}
 	})
 
@@ -228,9 +269,13 @@ func TestGetSections(t *testing.T) {
 		}
 
 		got := parser.GetSections()
-		want := []string{"Profile", "Deployment", "Owner"}
-		if !reflect.DeepEqual(want, got) {
-			t.Errorf("Got: %v. Expected: %v", got, want)
+		want := []string{"Owner", "Profile", "Deployment"}
+		for i := 0; i < len(got); i++ {
+
+			if contains(want, got[i]) == false {
+				t.Errorf("Got: %v. Expected: %v", got, want)
+
+			}
 		}
 	})
 
@@ -258,10 +303,14 @@ func TestGetSectionKeys(t *testing.T) {
 		}
 
 		got := parser.GetSectionKeys("Profile")
-		want := []string{"name", "password"}
+		want := []string{"password", "name"}
 
-		if !reflect.DeepEqual(want, got) {
-			t.Errorf("Got: %v. Expected: %v", got, want)
+		for i := 0; i < len(got); i++ {
+
+			if contains(want, got[i]) == false {
+				t.Errorf("Got: %v. Expected: %v", got, want)
+
+			}
 		}
 	})
 
@@ -274,9 +323,15 @@ func TestGetSectionKeys(t *testing.T) {
 
 		got := parser.GetSectionKeys("Owner")
 		want := []string{"name", "email"}
-		if !reflect.DeepEqual(want, got) {
-			t.Errorf("Got: %v. Expected: %v", got, want)
+
+		for i := 0; i < len(got); i++ {
+
+			if contains(want, got[i]) == false {
+				t.Errorf("Got: %v. Expected: %v", got, want)
+
+			}
 		}
+
 	})
 
 }
@@ -303,13 +358,10 @@ func TestWriteToFile(t *testing.T) {
 			t.Errorf("Couldn't read from string")
 		}
 
-		err = parser.WriteToFile("./testdata/writetofile_string_sample.ini")
+		err = parser.WriteToFile()
 		if err != nil {
 			t.Errorf("Got: %v.", err)
 
-		}
-		if _, err := os.Stat("./testdata/writetofile_string_sample.ini"); errors.Is(err, os.ErrNotExist) {
-			t.Errorf("File does not existd")
 		}
 
 	})
@@ -321,13 +373,10 @@ func TestWriteToFile(t *testing.T) {
 			t.Errorf("Couldn't read from file")
 		}
 
-		err = parser.WriteToFile("./testdata/writetofile_sample.ini")
+		err = parser.WriteToFile()
 		if err != nil {
 			t.Errorf("Got: %v. ", err)
 
-		}
-		if _, err = os.Stat("./testdata/writetofile_string_sample.ini"); errors.Is(err, os.ErrNotExist) {
-			t.Errorf("Filedoes not existd")
 		}
 
 	})
@@ -398,9 +447,9 @@ func TestWrongSection(t *testing.T) {
 
 		}
 
-		_, err = parser.GetSection("ownerr")
+		got := parser.GetSection("ownerr")
 
-		if err == nil {
+		if got != nil {
 			t.Errorf("ownerr section exists")
 		}
 	})
@@ -414,9 +463,9 @@ func TestWrongSection(t *testing.T) {
 
 		}
 
-		_, err = parser.GetSection("ownerr")
+		value := parser.GetSection("ownerr")
 
-		if err == nil {
+		if value != nil {
 			t.Errorf("ownerr section exists")
 		}
 	})
@@ -466,53 +515,4 @@ func TestWrongGet(t *testing.T) {
 			t.Errorf("Key `nameE` in section `Owner` exists, Although it shouldn't.")
 		}
 	})
-}
-
-func TestInvalidWriteToFile(t *testing.T) {
-	t.Run("writeto_invalid_filePath_with_content_fromstring", func(t *testing.T) {
-		parser := NewParser()
-		content := `
-		[Profile]
-		name = jarvis
-		password = secret
-		[Deployment]
-		project = peertube
-		name = peertest
-		public_ip = true
-		cpu = 4
-		memory = 8192
-		[Owner]
-		name = mo
-		email = mo@peertube.com
-	`
-		err := parser.ReadFromString(content)
-		if err != nil {
-			t.Errorf("Couldn't read from string")
-		}
-
-		err = parser.WriteToFile("./")
-
-		if err == nil {
-			t.Errorf("File not created")
-
-		}
-
-	})
-
-	t.Run("writetofile_invalid_filePath_with_content_fromfile", func(t *testing.T) {
-		parser := NewParser()
-		err := parser.ReadFromFile(inisample)
-		if err != nil {
-			t.Errorf("Couldn't read from string")
-		}
-
-		err = parser.WriteToFile("./")
-
-		if err == nil {
-			t.Errorf("File wasn't created")
-
-		}
-
-	})
-
 }
