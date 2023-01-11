@@ -38,7 +38,7 @@ func (parser *Parser) readFromReader(r io.Reader) error {
 				parser.data[section] = make(map[string]string)
 
 			} else {
-				return fmt.Errorf("section not found")
+				return fmt.Errorf("invalid section")
 			}
 
 		}
@@ -47,8 +47,11 @@ func (parser *Parser) readFromReader(r io.Reader) error {
 			keyVal := strings.Split(line, "=")
 			key := strings.TrimSpace(keyVal[0])
 			val := strings.TrimSpace(keyVal[1])
-			if key == "" || val == "" {
-				return fmt.Errorf("Either Key or Value is missing")
+			if key == "" {
+				return fmt.Errorf("key is missing")
+			}
+			if val == "" {
+				return fmt.Errorf("value is missing")
 			}
 
 			parser.data[section][key] = val
@@ -117,8 +120,7 @@ func (parser *Parser) String() string {
 
 func (parser *Parser) WriteToFile() error {
 	content := parser.String()
-	fh, err := os.CreateTemp("", "tmpfile-")
-	// fh, err := os.Create(path)
+	fh, err := os.CreateTemp("", "tmpfile")
 	if err != nil {
 		return fmt.Errorf("Could not create file : %v", err)
 	}
